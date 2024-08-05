@@ -1,6 +1,14 @@
-use std::path::PathBuf;
+use anyhow::anyhow;
+use serde::Deserialize;
 #[cfg(test)]
 use vfs::FileSystem;
+use crate::document_resolver::backend_stdfs;
+
+#[derive(Debug, Deserialize)]
+pub enum FileType {
+    File(String),
+    Directory(String, Option<Vec<FileType>>)
+}
 
 pub enum Backend {
     StdFS(String),
@@ -10,23 +18,19 @@ pub enum Backend {
 }
 
 impl Backend {
+    pub(crate) fn scan_all(&self, path: &String) -> anyhow::Result<Vec<FileType>> {
+        match self {
+            Backend::StdFS(base_path) => backend_stdfs::scan(base_path),
+            
+            // don't handle scan_all
+            _ => Err(anyhow!("scan not supported on this")),
+        }
+    }
+
     pub(crate) fn load(&self, path: &String) -> anyhow::Result<document::Document> {
         match self {
-            Backend::StdFS(base_path) => {
-                let mut path_buf = PathBuf::new();
-                path_buf.push(base_path);
-                path_buf.push(path);
-                
-                dbg!(&path_buf);
-                
-                let file =
-                    std::fs::read_to_string(path_buf).expect("(Backend::StdFS) failed to load file");
-                let document = document::Document::new_from_buffer(file.as_str())
-                    .expect("(Backend::StdFS) unable to parse document");
-
-                Ok(document)
-            }
-
+            Backend::StdFS(base_path) => backend_stdfs::read_file(base_path, path),
+            
             #[cfg(test)]
             Backend::Vfs(vfs) => {
                 let mut file = vfs

@@ -1,9 +1,7 @@
 use crate::merge::{merge, DocumentFragment};
 use sections::{CommandBlockType, SectionType};
 use std::collections::HashMap;
-use std::iter::{Map, once_with};
-use std::ops::ControlFlow;
-use std::ops::ControlFlow::{Break, Continue};
+use std::iter::{Map};
 use std::str::Lines;
 
 #[derive(Debug, Clone)]

@@ -1,4 +1,6 @@
 pub mod backend;
+mod backend_stdfs;
+
 pub use backend::Backend;
 
 use std::collections::HashMap;
