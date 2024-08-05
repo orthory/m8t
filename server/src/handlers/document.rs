@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use crate::state;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
@@ -6,10 +7,11 @@ use serde::{Serialize};
 
 pub(crate) async fn get_document(
     State(s): State<state::AppState>,
-    Path((fragment_type, document_path)): Path<(String, String)>,
+    Path((fragment_type, document_path)): Path<(String, PathBuf)>,
 ) -> (StatusCode, Json<Option<impl Serialize>>) {
-    let mut dr = s.document_resolver.write().await;
-    let document = dr.resolve(document_path).unwrap();
+    let dr = s.document_resolver.read().await;
+    let document = dr.resolve_document(&document_path).unwrap();
+    
     let fragment = document
         .fragments()
         .get(fragment_type.as_str())
@@ -21,6 +23,7 @@ pub(crate) async fn get_document(
     )
 }
 
+// TODO: FIXME
 #[cfg(test)]
 mod tests {
     use crate::document_resolver::*;
@@ -29,7 +32,7 @@ mod tests {
     use std::sync::Arc;
     use tokio::sync::RwLock;
     use vfs::FileSystem;
-
+    use fs_backend::Backend;
     use super::*;
 
     fn setup(test_path: &str) -> state::AppState {
@@ -53,7 +56,7 @@ mod tests {
         let state = setup(test_path);
         let (status_code, ret) = get_document(
             State(state),
-            Path((test_path.to_string(), fragment.to_string())),
+            Path((test_path.to_string(), PathBuf::from(fragment))),
         )
         .await;
 

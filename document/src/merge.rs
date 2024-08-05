@@ -12,10 +12,10 @@ pub enum DocumentFragment {
 }
 
 pub fn merge(
-    fragments: &mut HashMap<&'static str, DocumentFragment>,
+    fragments: &mut HashMap<String, DocumentFragment>,
     next: SectionType,
 ) -> Result<()> {
-    let section_key = extract_key(&next);
+    let section_key = extract_key(&next).to_string();
 
     let fragment = fragments
         .entry(section_key)

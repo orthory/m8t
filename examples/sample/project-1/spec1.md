@@ -1,6 +1,6 @@
 ---
 title: Making m8t better
-author: @kjessec
+author: "@kjessec"
 created_at: 1111111
 ---
 

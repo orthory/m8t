@@ -1,0 +1,15 @@
+[package]
+name = "fs-backend"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+document = { path = "../document" }
+sections = { path = "../sections" }
+anyhow.workspace = true
+serde.workspace = true
+vfs.workspace = true
+tokio.workspace = true
+log = "0.4.22"

@@ -1,13 +1,10 @@
 ---
 title: Making m8t webserver
-author: @kjessec
-draft: true
+author: "@kjessec"
 created_at: 1111111
 ---
 
 # m8t-web
-
-[draft]
 
 yoyo
 

@@ -1,12 +1,12 @@
 [package]
-name = "bin-server"
+name = "default"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
 [dependencies]
 tokio = { workspace = true }
 axum = { workspace = true }
-server = { path = "../server" }
-fs-backend = { path = "../fs-backend" }
-clap = { version = "4.5.13", features = ["derive"] }
+fs-backend = { path = "../../fs-backend" }
+server = { path = "../../server" }

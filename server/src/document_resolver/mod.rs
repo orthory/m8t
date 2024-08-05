@@ -1,29 +1,27 @@
-pub mod backend;
-mod backend_stdfs;
+mod resolve_hierarchy;
+mod resolve_document;
+use anyhow::Error;
+use fs_backend::{Backend, Hierarchy};
 
-pub use backend::Backend;
-
-use std::collections::HashMap;
-
+// DocumentResolver is an abstraction over hierarchy and cache
 pub struct DocumentResolver {
-    _backend: Backend,
-    _cache: HashMap<String, document::Document>,
+    hierarchy: Hierarchy,
+}
+
+#[derive(thiserror::Error, Debug)]
+pub enum Errors {
+    #[error("file not found: {0}")]
+    FileNotFound(Error),
+    
+    #[error("hierarchy requested but the leaf is not directory: {0}")]
+    InvalidHierarchy(String)
 }
 
 impl DocumentResolver {
-    pub fn new(backend: Backend) -> Self {
-        Self {
-            _backend: backend,
-            _cache: HashMap::new(),
-        }
-    }
-
-    pub fn resolve(&mut self, path: String) -> anyhow::Result<&document::Document> {
-        if !self._cache.contains_key(&path) {
-            let document_from_disk = self._backend.load(&path)?;
-            self._cache.insert(path.clone(), document_from_disk.clone());
-        }
-
-        Ok(self._cache.get(&path).unwrap())
+    pub fn new(backend: Backend) -> anyhow::Result<Self> {
+        let hierarchy = backend.construct_hierarchy()?;
+        Ok(Self {
+            hierarchy,
+        })
     }
 }

@@ -1,28 +1,50 @@
 use crate::merge::{merge, DocumentFragment};
-use sections::{CommandBlockType, SectionType};
+use sections::{CommandBlockType, frontmatter, SectionType};
 use std::collections::HashMap;
-use std::iter::{Map};
+use std::iter::Map;
 use std::str::Lines;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone)]
+// Fragments is a hashmap of document's fragments
+pub type Fragments = HashMap<String, DocumentFragment>;
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Document {
+    canonical_title: Option<String>,
     fragments: Fragments,
 }
 
-type Fragments = HashMap<&'static str, DocumentFragment>;
-
 impl Document {
     pub fn new_from_buffer(buffer: &str) -> anyhow::Result<Self> {
-        let mut document = Self {
-            fragments: HashMap::new(),
-        };
-
+        let mut fragments: Fragments = HashMap::new();
+        let mut canonical_title: Option<String> = None;
+        
         // handle each section
         for section in Parser::new_from_buffer(buffer) {
-            merge(&mut document.fragments, section).unwrap();
+            // intercept frontmatter, see if we can source "title" from this.
+            // if not, leave it none.
+            if let SectionType::FrontMatter(fm) = &section {
+                let temp_title = fm.0
+                    .get("title")
+                    .map(|temp_title| temp_title.as_str().unwrap());
+                
+                if let Some(temp_title) = temp_title {
+                    canonical_title = Some(temp_title.to_string())
+                }
+            }
+            
+            merge(&mut fragments, section).unwrap();
         }
 
-        Ok(document)
+        Ok(Self {
+            fragments,
+            canonical_title,
+        })
+    }
+    
+    // title is a shortcut that extracts the field "title" from frontmatter
+    pub fn title(&self) -> Option<String> {
+        self.canonical_title.clone()
     }
 
     pub fn fragments(&self) -> &Fragments {

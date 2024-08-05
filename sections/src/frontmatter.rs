@@ -4,7 +4,7 @@ use std::collections::HashMap;
 const PATTERN: &str = "---";
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct FrontMatter(HashMap<String, serde_yaml::Value>);
+pub struct FrontMatter(pub HashMap<String, serde_yaml::Value>);
 
 impl FrontMatter {
     pub fn new(block: Vec<String>) -> anyhow::Result<Self> {
