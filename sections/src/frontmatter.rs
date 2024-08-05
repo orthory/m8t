@@ -1,55 +1,25 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use crate::{ReadLineResult, Section};
 
 const PATTERN: &str = "---";
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct FrontMatter {
-    frontmatter: HashMap<String, serde_yaml::Value>,
-
-    #[serde(skip_serializing)]
-    line_pos: u64,
-
-    #[serde(skip_serializing)]
-    temp_buffer: Vec<String>,
-}
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct FrontMatter(HashMap<String, serde_yaml::Value>);
 
 impl FrontMatter {
-    fn finalize(&mut self) -> &mut Self {
-        let as_yaml_str = self.temp_buffer.join("\n");
-        self.frontmatter = serde_yaml::from_str(as_yaml_str.as_str()).expect("frontmatter: yaml decode failed");
-        self
-    }
-}
+    pub fn new(block: Vec<String>) -> anyhow::Result<Self> {
+        let block_filtered = block
+            .iter()
+            .filter_map(|l| (!l.eq(PATTERN)).then_some(l.clone()))
+            .collect::<Vec<String>>();
 
-impl Section for FrontMatter {
-    fn new(line_pos: u64) -> Self {
-        Self {
-            line_pos,
-            temp_buffer: Vec::new(),
-            frontmatter: HashMap::new()
-        }
-    }
+        let block_filtered = block_filtered.join("\n");
+        let block_filtered = block_filtered.as_str();
 
-    fn match_line(line: &str) -> bool {
-        line.eq(PATTERN)
-    }
+        let frontmatter =
+            serde_yaml::from_str(block_filtered).expect("frontmatter block contains invalid yaml");
 
-    fn read_line(&mut self, line: &str) -> ReadLineResult {
-        match line {
-            "---" => match self.temp_buffer.is_empty() {
-                false => {
-                    self.finalize();
-                    ReadLineResult::Done
-                },
-                true  => ReadLineResult::Keep
-            },
-            _ => {
-                self.temp_buffer.push(String::from(line));
-                ReadLineResult::Keep
-            }
-        }
+        Ok(Self(frontmatter))
     }
 }
 
@@ -70,12 +40,12 @@ rules:
 
     #[test]
     fn frontmatter_works() {
-        let mut sec = FrontMatter::new(0);
+        let split = fixture
+            .split("\n")
+            .map(|l| l.to_string())
+            .collect::<Vec<String>>();
+        let res = FrontMatter::new(split).unwrap();
 
-        for l in fixture.lines() {
-            sec.read_line(l);
-        }
-
-        dbg!(sec);
+        assert!(res.0.get("rules").is_some());
     }
 }

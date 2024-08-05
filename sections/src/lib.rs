@@ -1,53 +1,48 @@
-pub mod frontmatter;
-pub mod body;
 pub mod comment;
+pub mod frontmatter;
 
-pub enum ReadLineResult {
-    Keep,
-    Done
-}
-
-pub trait Section: Sized
-{
-    fn new(line_pos: u64) -> Self;
-    fn match_line(line: &str) -> bool;
-    fn read_line(&mut self, line: &str) -> ReadLineResult;
-
-}
-
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum SectionType {
     Empty,
-    Body(body::Body),
+    Body(String),
+
+    // extensions
     FrontMatter(frontmatter::FrontMatter),
-    Comment(comment::Comment)
+    Comment(comment::Comment),
+
+    // todo
+    Task,
+    Event,
 }
 
-impl Section for SectionType {
-    fn new(line_pos: u64) -> Self {
-        unreachable!()
-    }
+pub enum CommandBlockType {
+    Line(Pattern),
+    Block(Pattern, Pattern),
+}
 
-    fn match_line(line: &str) -> bool {
-        unreachable!()
-    }
+pub enum Pattern {
+    Exact(&'static str),
+    StartsWith(&'static str),
+}
 
-    fn read_line(&mut self, line: &str) -> ReadLineResult {
-        match self {
-            SectionType::FrontMatter(c) => c.read_line(line),
-            SectionType::Comment(c) => c.read_line(line),
-            SectionType::Body(c) => c.read_line(line),
-            r => {
-                dbg!(r);
-                panic!("wtf");
-            }
+impl Pattern {
+    pub fn is_matched(&self, line: &String) -> bool {
+        match *self {
+            Pattern::Exact(patt) => line.eq(patt),
+            Pattern::StartsWith(patt) => line.starts_with(patt),
         }
     }
 }
 
-#[derive(Debug)]
-pub enum LineDelimiters<'parse> {
-    Body(&'parse str),
-    FrontMatter(&'parse str),
-    Comment(&'parse str),
-}
+type LineFeed<'file> = fn(Vec<String>) -> anyhow::Result<SectionType>;
+
+pub const SECTION_ENTRIES: [(CommandBlockType, LineFeed); 2] = [
+    (
+        CommandBlockType::Block(Pattern::Exact("---"), Pattern::Exact("---")),
+        |block| frontmatter::FrontMatter::new(block).map(SectionType::FrontMatter),
+    ),
+    (
+        CommandBlockType::Block(Pattern::StartsWith("/comment"), Pattern::Exact("/comment")),
+        |block| comment::Comment::new(block).map(SectionType::Comment),
+    ),
+];
