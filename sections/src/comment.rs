@@ -9,13 +9,14 @@ const FIELD_DELIMITER: &str = ",";
 // this extension is a simple extension that facilitates in-place comment
 //
 // ```markdown
-// /comment <author>,<parent_id>
+// /comment[@<author>,timestamp,<parent_id>]
 // <markdown content>
 // /comment
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct Comment {
-    author: Option<String>,
+    author: String,
     parent_id: Option<String>,
+    timestamp: u64,
     body: String,
 }
 
@@ -49,7 +50,8 @@ impl Comment {
             .iter()
             .filter(|&l| !l.starts_with(PATTERN))
             .cloned()
-            .collect::<Vec<String>>().join("\n");
+            .collect::<Vec<String>>()
+            .join("\n");
 
         Ok(comment)
     }
@@ -57,10 +59,13 @@ impl Comment {
 
 static PARSE_RULES: [for<'parse> fn(&'parse mut Comment, &str); 2] = [
     |_self, author_id| {
-        _self.author = Some(String::from(author_id));
+        _self.author = String::from(author_id);
     },
     |_self, parent_id| {
         _self.parent_id = Some(String::from(parent_id));
+    },
+    |_self, timestamp| {
+        _self.timestamp = timestamp.parse().unwrap();
     },
 ];
 
